@@ -12,7 +12,7 @@
 --      may be used to endorse or promote products derived from this software
 --      without specific prior written permission.
 --    * Redistributions in any form whatsoever must retain the following
---      acknowledgment visually in the program (e.g. the credits of the program): 
+--      acknowledgment visually in the program (e.g. the credits of the program):
 --      'This product includes software developed by Corona Labs Inc. (http://www.coronalabs.com).'
 --
 -- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -26,7 +26,7 @@
 -- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 -- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-local M = 
+local M =
 {
 	_options = {},
 	_widgetName = "widget.newScrollView",
@@ -35,7 +35,10 @@ local M =
 
 -- Require needed widget files
 local _widget = require( "widget" )
-local _momentumScrolling = require( "widget_momentumScrolling" )
+
+local widgetPath = widget.path or  ""
+local _momentumScrolling = require( widgetPath.."widget_momentumScrolling" )
+
 -- TODO: this is temporary, because the tableview view height is calculated wrong. we need to pass in the widget type to know how to position the scrollbar
 _momentumScrolling.widgetType = "scrollView"
 
@@ -48,10 +51,10 @@ local mAbs = math.abs
 local function createScrollView( scrollView, options )
 	-- Create a local reference to our options table
 	local opt = options
-	
+
 	-- Forward references
 	local view, viewFixed, viewBackground, viewMask
-	
+
 	-- Create the view
 	view = display.newGroup()
 	--
@@ -71,32 +74,32 @@ local function createScrollView( scrollView, options )
 
 
 	viewFixed = display.newGroup()
-		
+
 	-- Create the view's background
 	viewBackground = display.newRect( scrollView, 0, 0, opt.width, opt.height )
 	viewBackground.x = 0
 	viewBackground.y = 0
 
 
-	
+
 	----------------------------------
 	-- Properties
 	----------------------------------
-	
+
 	-- Background
 	viewBackground.isVisible = not opt.shouldHideBackground
 	viewBackground.isHitTestable = true
 	viewBackground:setFillColor( unpack( opt.backgroundColor ) )
-	
+
 	-- Set the view's initial position ( to account for top padding )
 	view.y = view.y + opt.topPadding
 	-- Set the platform
 	view._isPlatformAndroid = "Android" == system.getInfo( "platformName" )
-	
+
 	-------------------------------------------------------
 	-- Assign properties to the view
 	-------------------------------------------------------
-	
+
 	-- We need to assign these properties to the object
 	view._background = viewBackground
 	view._mask = viewMask
@@ -129,9 +132,9 @@ local function createScrollView( scrollView, options )
 	view._isLocked = opt.isLocked
 	view._scrollWidth = opt.scrollWidth
 	view._scrollHeight = opt.scrollHeight
-	view._trackVelocity = false	
+	view._trackVelocity = false
 	view._updateRuntime = false
-	
+
 	-- assign the threshold values to the momentum
 	_momentumScrolling.scrollStopThreshold = opt.scrollStopThreshold
 	_momentumScrolling.isBounceEnabled = opt.isBounceEnabled
@@ -146,36 +149,36 @@ local function createScrollView( scrollView, options )
 	view._fixedGroup = viewFixed
 
 	-- Assign objects to the scrollView
-	scrollView._view = view	
+	scrollView._view = view
 	scrollView:insert( view )
 	scrollView:insert( viewFixed )
-	
+
 	----------------------------------------------------------
-	--	PUBLIC METHODS	
+	--	PUBLIC METHODS
 	----------------------------------------------------------
-	
+
 	-- Function to retrieve the x/y position of the scrollView's content
 	function scrollView:getContentPosition()
 		return self._view.x, self._view.y
 	end
-	
+
 	-- Function to scroll the view to a specific position
 	function scrollView:scrollToPosition( options )
 		local newX = options.x or self._view.x
 		local newY = options.y or self._view.y
 		local transitionTime = options.time or 400
 		local onTransitionComplete = options.onComplete
-		
+
 		-- Stop updating Runtime & tracking velocity
 		self._view._updateRuntime = false
 		self._view._trackVelocity = false
 		-- Reset velocity back to 0
-		self._view._velocity = 0		
-	
+		self._view._velocity = 0
+
 		-- Transition the view to the new position
 		transition.to( self._view, { x = newX, y = newY, time = transitionTime, transition = easing.inOutQuad, onComplete = onTransitionComplete } )
 	end
-	
+
 	-- Function to scroll the view to a specified position from a list of constants ( i.e. top/bottom/left/right )
 	function scrollView:scrollTo( position, options )
 		local newPosition = position or "top"
@@ -183,7 +186,7 @@ local function createScrollView( scrollView, options )
 		local newY = self._view.y
 		local transitionTime = options.time or 400
 		local onTransitionComplete = options.onComplete
-		
+
 		-- Set the target x/y positions
 		if "top" == newPosition then
 			newY = self._view._topPadding
@@ -194,17 +197,17 @@ local function createScrollView( scrollView, options )
 		elseif "right" == newPosition then
 			newX = self._view._background.x - ( self._view.contentWidth ) + ( self._view._background.contentWidth * 0.5 ) - self._view._rightPadding
 		end
-		
+
 		-- Transition the view to the new position
 		transition.to( self._view, { x = newX, y = newY, time = transitionTime, transition = easing.inOutQuad, onComplete = onTransitionComplete } )
 	end
-	
+
 	function scrollView:takeFocus( event )
 		local target = event.target
-		
+
 		-- Remove focus from the object
 		display.getCurrentStage():setFocus( target, nil )
-		
+
 		-- Handle turning widget buttons back to their default state (visually, ie their default button images & labels)
 		if "table" == type( target ) then
 			if "string" == type( target._widgetType ) then
@@ -212,10 +215,10 @@ local function createScrollView( scrollView, options )
 				target:_loseFocus()
 			end
 		end
-		
+
 		-- Create our new event table
 		local newEvent = {}
-		
+
 		-- Copy the event table's keys/values into our newEvent table
 		for k, v in pairs( event ) do
 			newEvent[k] = v
@@ -224,61 +227,61 @@ local function createScrollView( scrollView, options )
 		-- Set our new event's phase to began, and it's target to the view
 		newEvent.phase = "began"
 		newEvent.target = self._view
-		
+
 		-- Send a touch event to the view
 		self._view:touch( newEvent )
 	end
-		
+
 	function scrollView:setScrollWidth( newValue )
-		
+
 		-- adjust the scrollview scroll width
 		timer.performWithDelay( 2, function()
 			self._view._scrollWidth = newValue or self._view._scrollWidth
 		end )
-				
+
 	end
 
 	function scrollView:setScrollHeight( newValue )
-		
+
 		-- adjust the scrollview scroll height
 		timer.performWithDelay( 2, function()
 			self._view._scrollHeight = newValue or self._view._scrollHeight
 		end )
-				
+
 		-- Recreate the scrollBar
 		if not opt.hideScrollBar then
 			if self._view._scrollBar then
 				display.remove( self._view._scrollBar )
 				self._view._scrollBar = nil
 			end
-			
+
 			if not self._view._isLocked then
 				-- Need a delay here also..
 				timer.performWithDelay( 2, function()
 					--[[
 					Currently only vertical scrollBar's are provided, so don't show it if they can't scroll vertically
-					--]]								
+					--]]
 					if not self._view._scrollBar and not self._view._isVerticalScrollingDisabled and self._view._scrollHeight > self._view._height then
 						self._view._scrollBar = _momentumScrolling.createScrollBar( self._view, opt.scrollBarOptions )
 					end
 				end)
 			end
-		end	
+		end
 	end
-	
+
 	----------------------------------------------------------
-	--	PRIVATE METHODS	
-	----------------------------------------------------------	
+	--	PRIVATE METHODS
+	----------------------------------------------------------
 
 	-- Handle touch events on any inserted widget buttons
 	local function _handleButtonTouch( event )
 		local _targetButton = event.target
-		
+
 		-- If the target exists and is not active
 		if _targetButton then
 			if not _targetButton._isActive then
 				local phase = event.phase
-				
+
 				view:touch( event )
 
 				return true
@@ -296,17 +299,17 @@ local function createScrollView( scrollView, options )
 
     function scrollView:insert( arg1, arg2 )
         local index, obj
-        
+
         if arg1 and type( arg1 ) == "number" then
             index = arg1
         elseif arg1 and type( arg1 ) == "table" then
             obj = arg1
         end
-        
+
         if arg2 and type( arg2 ) == "table" then
             obj = arg2
         end
-        
+
         if index then
         	if isGraphicsV1 then
             	self._view:insert( index, obj )
@@ -329,7 +332,7 @@ local function createScrollView( scrollView, options )
 
 				-- Update the scrollHeight
 				self._view._scrollHeight = self._view.height
-				
+
 				-- Override the scroll height if it is less than the height of the window
 				if "number" == type( self._view._scrollHeight ) and "number" == type( self._view._height ) then
 					if self._view._scrollHeight < self._view._height then
@@ -350,66 +353,66 @@ local function createScrollView( scrollView, options )
 		-- If we haven't already over-ridden it
 		if nil == obj._cachedRemoveSelf then
 			obj._cachedRemoveSelf = obj.removeSelf
-			
+
 			local function removeSelf( self )
 				self:_cachedRemoveSelf()
-				
+
 				-- Update the scroll area size
 				updateScrollAreaSize()
 			end
-			
+
 			obj.removeSelf = removeSelf
 		end
 
 		-- Update the scroll area size
 		updateScrollAreaSize()
-		
+
 		-- Create the scrollBar
 		if not opt.hideScrollBar then
 			if self._view._scrollBar then
 				display.remove( self._view._scrollBar )
 				self._view._scrollBar = nil
 			end
-			
+
 			if not self._view._isLocked then
 				-- Need a delay here also..
 				timer.performWithDelay( 2, function()
 					--[[
 					Currently only vertical scrollBar's are provided, so don't show it if they can't scroll vertically
 					--]]
-															
+
 					if not self._view._scrollBar and not self._view._isVerticalScrollingDisabled and self._view._scrollHeight > self._view._height then
 						self._view._scrollBar = _momentumScrolling.createScrollBar( self._view, opt.scrollBarOptions )
 					end
 				end)
 			end
-		end	
+		end
     end
-    
+
     -- isLocked setter function
 	function scrollView:setIsLocked( lockedState )
 		return self._view:_setIsLocked( lockedState )
 	end
 
 	-- Transfer touch from the view's background to the view's content
-	function viewBackground:touch( event )		
+	function viewBackground:touch( event )
 		view:touch( event )
-		
+
 		return true
 	end
-	
+
 	viewBackground:addEventListener( "touch" )
-	
+
 	-- Handle touches on the scrollview
 	function view:touch( event )
-		local phase = event.phase 
+		local phase = event.phase
 		local time = event.time
-		
+
 		-- Set the time held
 		if "began" == phase then
 			self._timeHeld = event.time
-		end	
-		
+		end
+
 		-- Android fix for objects inserted into scrollView's
 		if self._isPlatformAndroid then
 			-- Distance moved
@@ -426,57 +429,57 @@ local function createScrollView( scrollView, options )
 				end
 			end
 		end
-						
+
 		-- Handle momentum scrolling (and the view isn't locked)
 		if not self._isLocked then
 			_momentumScrolling._touch( self, event )
 		end
-		
+
 		-- Execute the listener if one is specified
 		if self._listener then
 			local newEvent = {}
-			
+
 			for k, v in pairs( event ) do
 				newEvent[k] = v
 			end
-			
+
 			-- check if the momentum scrolling module has a non-nil direction variable
 			if _momentumScrolling._direction then
 				newEvent.direction = _momentumScrolling._direction
 			end
-			
+
 			-- Set event.target to the scrollView object, not the view
 			newEvent.target = self.parent
-			
+
 			-- Execute the listener
 			self._listener( newEvent )
 		end
-				
+
 		-- Set the view's phase so we can access it in the enterFrame listener below
 		self._phase = event.phase
-		
+
 		-- Set the view's target object (the object we touched) so we can access it in the enterFrame listener below
 		self._target = event.target
-		
+
 		return true
 	end
-	
+
 	view:addEventListener( "touch" )
-	
-	
+
+
   	-- EnterFrame listener for our scrollView
 	function view:enterFrame( event )
 		local _scrollView = self.parent
 
 		-- Handle momentum @ runtime
-		_momentumScrolling._runtime( self, event )		
-		
+		_momentumScrolling._runtime( self, event )
+
 		-- Constrain x/y scale values to 1.0
 		if _scrollView.xScale ~= 1.0 then
 			_scrollView.xScale = 1.0
 			print( M._widgetName, "Does not support scaling" )
 		end
-		
+
 		if _scrollView.yScale ~= 1.0 then
 			_scrollView.yScale = 1.0
 			print( M._widgetName, "Does not support scaling" )
@@ -489,39 +492,39 @@ local function createScrollView( scrollView, options )
 
 		return true
 	end
-	
+
 	Runtime:addEventListener( "enterFrame", view )
-	
+
 	-- isLocked variable setter function
 	function view:_setIsLocked( lockedState )
 		if type( lockedState ) ~= "boolean" then return end
 		self._isVerticalScrollingDisabled = lockedState
 		self._isLocked = lockedState
 	end
-		
+
 	-- Finalize function for the scrollView
-	function scrollView:_finalize()		
+	function scrollView:_finalize()
 		-- Remove the runtime listener
 		Runtime:removeEventListener( "enterFrame", self._view )
-				
+        display.currentStage:setFocus(view, nil)
 		-- Remove scrollBar if it exists
 		if self._view._scrollBar then
 			display.remove( self._view._scrollBar )
 			self._view._scrollBar = nil
 		end
 	end
-			
+
 	return scrollView
 end
 
 
 -- Function to create a new scrollView object ( widget.newScrollView )
-function M.new( options )	
+function M.new( options )
 	local customOptions = options or {}
-	
+
 	-- Create a local reference to our options table
 	local opt = M._options
-	
+
 	-------------------------------------------------------
 	-- Properties
 	-------------------------------------------------------
@@ -541,7 +544,7 @@ function M.new( options )
 	opt.baseDir = customOptions.baseDir or system.ResourceDirectory
 	opt.maskFile = customOptions.maskFile
 	opt.listener = customOptions.listener
-		
+
 	-- Properties
 	opt.shouldHideBackground = customOptions.hideBackground or false
 	opt.backgroundColor = customOptions.backgroundColor or { 255, 255, 255, 255 }
@@ -559,32 +562,32 @@ function M.new( options )
 	opt.isLocked = customOptions.isLocked or false
 	opt.scrollStopThreshold = customOptions.scrollStopThreshold or 250
 	opt.isBounceEnabled = true
-	if nil ~= customOptions.isBounceEnabled and customOptions.isBounceEnabled == false then 
+	if nil ~= customOptions.isBounceEnabled and customOptions.isBounceEnabled == false then
 	    opt.isBounceEnabled = false
 	end
 	opt.autoHideScrollBar = true
 	if nil ~= customOptions.autoHideScrollBar and customOptions.autoHideScrollBar == false then
 		opt.autoHideScrollBar = false
 	end
-	
+
 	-- Set the scrollView to locked if both horizontal and vertical scrolling are disabled
 	if opt.isHorizontalScrollingDisabled and opt.isVerticalScrollingDisabled then
 		opt.isLocked = true
 	end
-	
+
 	-- Ensure scroll width/height values are at a minimum, equal to the scroll window width/height
 	if opt.scrollHeight then
 		if opt.scrollHeight < opt.height then
 			opt.scrollHeight = opt.height
 		end
 	end
-	
+
 	if opt.scrollWidth then
 		if opt.scrollWidth < opt.width then
 			opt.scrollWidth = opt.width
 		end
 	end
-	
+
 	-- ScrollBar options
 	if nil ~= customOptions.scrollBarOptions then
 	    opt.scrollBarOptions =
@@ -598,11 +601,11 @@ function M.new( options )
 	    opt.scrollBarOptions = {}
 	end
 
-			
+
 	-------------------------------------------------------
 	-- Create the scrollView
 	-------------------------------------------------------
-		
+
 	-- Create the scrollView object
 	local scrollView = _widget._newContainer
 	{
@@ -614,14 +617,14 @@ function M.new( options )
 	}
 
 	-- Create the scrollView
-	createScrollView( scrollView, opt )	
-	
+	createScrollView( scrollView, opt )
+
 	scrollView.width = opt.width
 	scrollView.height = opt.height
-	
+
 	local x, y = _widget._calculatePosition( scrollView, opt )
-	scrollView.x, scrollView.y = x, y	
-	
+	scrollView.x, scrollView.y = x, y
+
 	return scrollView
 end
 
