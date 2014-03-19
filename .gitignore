@@ -1,0 +1,15 @@
+Thumbs.db
+GliderProperties.proj
+.DS_Store
+.idea
+*.swp
+*~.nib
+*.mov
+build/
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.mode1v3
+*.mode2v3
+*.iml
+*.cider
