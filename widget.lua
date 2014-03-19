@@ -1,16 +1,19 @@
 --[[
 	Copyright:
 		Copyright (C) 2013 Corona Inc. All Rights Reserved.
-		
-	File: 
+
+	File:
 		widget.lua
 --]]
 
-local widget = 
+local widget =
 {
 	version = "2.0",
 	themeName = "default"
 }
+
+local widgetPath = configTP.libPath.."widgetLibrary."
+widget.path = widgetPath
 
 local isGraphicsV1 = ( 1 == display.getDefault( "graphicsCompatibility" ) )
 
@@ -22,14 +25,14 @@ local isGraphicsV1 = ( 1 == display.getDefault( "graphicsCompatibility" ) )
 local cached_displayNewGroup = display.newGroup
 function display.newGroup()
 	local newGroup = cached_displayNewGroup()
-	
+
 	-- Function to find/remove widgets within group
 	local function removeWidgets( group )
 		if group.numChildren then
 			for i = group.numChildren, 1, -1 do
 				if group[i]._isWidget then
 					group[i]:removeSelf()
-				
+
 				elseif not group[i]._isWidget and group[i].numChildren then
 					-- Nested group (that is not a widget)
 					removeWidgets( group[i] )
@@ -37,21 +40,21 @@ function display.newGroup()
 			end
 		end
 	end
-	
+
 	-- Store a reference to the original removeSelf method
 	local cached_removeSelf = newGroup.removeSelf
-	
+
 	-- Subclass the removeSelf method
 	function newGroup:removeSelf()
 		-- Remove widgets first
 		removeWidgets( self )
-		
+
 		-- Continue removing the group as usual
 		if self.parent and self.parent.remove then
 			self.parent:remove( self )
 		end
 	end
-	
+
 	return newGroup
 end
 
@@ -59,7 +62,7 @@ end
 local function _removeSelf( self )
 	-- All widget objects can add a finalize method for cleanup
 	local finalize = self._finalize
-	
+
 	-- If this widget has a finalize function
 	if type( finalize ) == "function" then
 		finalize( self )
@@ -93,7 +96,7 @@ function widget._new( options )
 	if not isGraphicsV1 then
 		newWidget.anchorChildren = true
 	end
-	
+
 	return newWidget
 end
 
@@ -126,7 +129,7 @@ local newWidgetV2 = function( newWidget, ... )
 	widget._oldAnchorX = oldAnchorX
 	local oldAnchorY = display.getDefault( "anchorY" )
 	widget._oldAnchorY = oldAnchorY
-	
+
 	-- then we set the anchors to 0.5 for the widget
 	display.setDefault( "anchorX", 0.5 )
 	display.setDefault( "anchorY", 0.5 )
@@ -162,14 +165,14 @@ function widget._checkRequirements( options, theme, widgetName )
 	if options.defaultFile or options.overFile then
 		return
 	end
-	
+
 	-- If there isn't an options table and there isn't a theme set, throw an error
 	local noParams = not options and not theme
-	
+
 	if noParams then
 		error( "WARNING: Either you haven't set a theme using widget.setTheme or the widget theme you are using does not support " .. widgetName, 3 )
 	end
-	
+
 	-- If the user hasn't provided the necessary image sheet lua file (either via custom sheet or widget theme)
 	local noData = not options.data and not theme.data
 
@@ -180,17 +183,17 @@ function widget._checkRequirements( options, theme, widgetName )
 			error( "ERROR: " .. widgetName .. ": Attempt to create a widget with no custom imageSheet data set and no theme set, if you want to use a theme, you must call widget.setTheme( theme )", 3 )
 		end
 	end
-	
+
 	-- Throw error if the user hasn't defined a sheet and has defined data or vice versa.
 	local noSheet = not options.sheet and not theme.sheet
-	
+
 	if noSheet then
 		if widget.theme then
 			error( "ERROR: " .. widgetName .. ": Theme sheet expected, got nil", 3 )
 		else
 			error( "ERROR: " .. widgetName .. ": Attempt to create a widget with no custom imageSheet set and no theme set, if you want to use a theme, you must call widget.setTheme( theme )", 3 )
 		end
-	end		
+	end
 end
 
 -- Set the current theme from a lua theme file
@@ -206,27 +209,27 @@ function widget.isSeven()
 end
 
 -- Function to retrieve a widget's theme settings
-local function _getTheme( widgetTheme, options )	
+local function _getTheme( widgetTheme, options )
 	local theme = nil
-		
+
 	-- If a theme has been set
 	if widget.theme then
 		theme = widget.theme[widgetTheme]
 	end
-	
+
 	-- If a theme exists
 	if theme then
 		-- Style parameter optionally set by user
 		if options and options.style then
 			local style = theme[options.style]
-			
+
 			-- For themes that support various "styles" per widget
 			if style then
 				theme = style
 			end
 		end
 	end
-	
+
 	return theme
 end
 
@@ -235,13 +238,13 @@ function widget._isWithinBounds( object, event )
 	local bounds = object.contentBounds
     local x, y = event.x, event.y
 	local isWithinBounds = true
-		
+
 	if "table" == type( bounds ) then
 		if "number" == type( x ) and "number" == type( y ) then
 			isWithinBounds = bounds.xMin <= x and bounds.xMax >= x and bounds.yMin <= y and bounds.yMax >= y
 		end
 	end
-	
+
 	return isWithinBounds
 end
 
@@ -254,7 +257,7 @@ end
 -----------------------------------------------------------------------------------------
 
 function widget.newScrollView( options )
-	local _scrollView = require( "widget_scrollview" )
+	local _scrollView = require( widgetPath.."widget_scrollview" )
 	return _scrollView.new( options )
 end
 
@@ -263,8 +266,8 @@ end
 -----------------------------------------------------------------------------------------
 
 function widget.newTableView( options )
-	local _tableView = require( "widget_tableview" )
-	return _tableView.new( options )	
+	local _tableView = require( widgetPath.."widget_tableview" )
+	return _tableView.new( options )
 end
 
 -----------------------------------------------------------------------------------------
@@ -273,18 +276,18 @@ end
 
 function widget.newPickerWheel( options )
 	local theme = _getTheme( "pickerWheel", options )
-	local _pickerWheel = require( "widget_pickerWheel" )
-	return _pickerWheel.new( options, theme )	
+	local _pickerWheel = require( widgetPath.."widget_pickerWheel" )
+	return _pickerWheel.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
 -- newSlider widget
 -----------------------------------------------------------------------------------------
 
-function widget.newSlider( options )	
+function widget.newSlider( options )
 	local theme = _getTheme( "slider", options )
-	local _slider = require( "widget_slider" )
-	return _slider.new( options, theme )	
+	local _slider = require( widgetPath.."widget_slider" )
+	return _slider.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -293,8 +296,8 @@ end
 
 function widget.newTabBar( options )
 	local theme = _getTheme( "tabBar", options )
-	local _tabBar = require( "widget_tabbar" )
-	return _tabBar.new( options, theme )	
+	local _tabBar = require( widgetPath.."widget_tabbar" )
+	return _tabBar.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -303,7 +306,7 @@ end
 
 function widget.newButton( options )
 	local theme = _getTheme( "button", options )
-	local _button = require( "widget_button" )
+	local _button = require( widgetPath.."widget_button" )
 	return _button.new( options, theme )
 end
 
@@ -313,7 +316,7 @@ end
 
 function widget.newSpinner( options )
 	local theme = _getTheme( "spinner", options )
-	local _spinner = require( "widget_spinner" )
+	local _spinner = require( widgetPath.."widget_spinner" )
 	return _spinner.new( options, theme )
 end
 
@@ -323,8 +326,8 @@ end
 
 function widget.newSwitch( options )
 	local theme = _getTheme( "switch", options )
-	local _switch = require( "widget_switch" )
-	return _switch.new( options, theme )	
+	local _switch = require( widgetPath.."widget_switch" )
+	return _switch.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -333,7 +336,7 @@ end
 
 function widget.newStepper( options )
 	local theme = _getTheme( "stepper", options )
-	local _stepper = require( "widget_stepper" )
+	local _stepper = require( widgetPath.."widget_stepper" )
 	return _stepper.new( options, theme )
 end
 
@@ -343,8 +346,8 @@ end
 
 function widget.newSearchField( options )
 	local theme = _getTheme( "searchField", options )
-	local _searchField = require( "widget_searchField" )
-	return _searchField.new( options, theme )	
+	local _searchField = require( widgetPath.."widget_searchField" )
+	return _searchField.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -353,8 +356,8 @@ end
 
 function widget.newProgressView( options )
 	local theme = _getTheme( "progressView", options )
-	local _progressView = require( "widget_progressView" )
-	return _progressView.new( options, theme )	
+	local _progressView = require( widgetPath.."widget_progressView" )
+	return _progressView.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -363,8 +366,8 @@ end
 
 function widget.newSegmentedControl( options )
 	local theme = _getTheme( "segmentedControl", options )
-	local _segmentedControl = require( "widget_segmentedControl" )
-	return _segmentedControl.new( options, theme )	
+	local _segmentedControl = require( widgetPath.."widget_segmentedControl" )
+	return _segmentedControl.new( options, theme )
 end
 
 -----------------------------------------------------------------------------------------
@@ -426,7 +429,7 @@ if not isGraphicsV1 then
 	widget.newProgressView = function( ... )
 		return newWidgetV2( newProgressView, ... )
 	end
-	
+
 	local newSegmentedControl = widget.newSegmentedControl
 	widget.newSegmentedControl = function( ... )
 		return newWidgetV2( newSegmentedControl, ... )
@@ -479,7 +482,7 @@ elseif not isSimulator then
 	-- Gets the major platform version eg 10 in 10.1.3
 	local platformVersion = string.match(system.getInfo("platformVersion"), "%d+")
 	platformVersion = tonumber(platformVersion)
-	
+
 	if type(platformVersion) == "number" and platformVersion < 7 then
 		defaultTheme = "widget_theme_ios"
 	end
