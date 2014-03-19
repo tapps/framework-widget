@@ -162,6 +162,10 @@ end
 local function createOnOffSwitch( switch, options )
 	-- Create a local reference to our options table
 	local opt = options
+	
+	-- This is measured from the pixels in the switch overlay image.
+	local startRange = - mRound( opt.onOffOverlayWidth / 3.06 )
+	local endRange = mAbs( startRange )
 		
 	-- Forward references
 	local imageSheet, view, viewOverlay, viewHandle, viewMask
@@ -262,16 +266,7 @@ local function createOnOffSwitch( switch, options )
 	-------------------------------------------------------
 	-- Assign properties to the view
 	-------------------------------------------------------
-
-	-- This is measured from the dimensions of the overlay and handle images
-	local startRange 
-	local endRange
-	
-	if not _widget.isSeven() then
-		startRange = - mRound( viewOverlay.width - viewHandle.contentWidth ) / 2
-		endRange = mAbs( startRange )
-	end
-	
+		
 	-- Properties
 	view._transition = nil
 	view._handleTransition = nil
@@ -298,13 +293,8 @@ local function createOnOffSwitch( switch, options )
 	-- Assign properties to the switch	
 	switch.isOn = opt.initialSwitchState
 	
-	-- For non-graphics v1 mode, the children have to be non-anchored
-	if not isGraphicsV1 then
-		switch.anchorChildren = false
-	end
-	
 	if not _widget.isSeven() then
-		
+	
 		-- Set the switch position based on the chosen default value (ie on/off)
 		if switch.isOn then
 			view.x = view._endRange
@@ -580,53 +570,31 @@ local function createOnOffSwitch( switch, options )
 		-- Set the switches transition time
 		local switchTransitionTime = 200
 		
-		-- Temporary until we wrap up theme definition of ios7 
-		
-		if not _widget.isSeven() then
-		
-			-- Set the switch to on/off visually
-			if _isSwitchOn then
-				if _isAnimated then
-					self._transition = transition.to( self, { x = self._endRange, maskX = self._startRange, time = switchTransitionTime, onComplete = executeOnComplete } )
-					self._handleTransition = transition.to( self._handle, { x = self._endRange, time = switchTransitionTime } )
-				else
-					self.x = self._endRange
-					self._handle.x = self._endRange
-					self.maskX = self._startRange
-				
-					-- Execute the onComplete listener
-					executeOnComplete()
-				end
+		-- Set the switch to on/off visually
+		if _isSwitchOn then
+			if _isAnimated then
+				self._transition = transition.to( self, { x = self._endRange, maskX = self._startRange, time = switchTransitionTime, onComplete = executeOnComplete } )
+				self._handleTransition = transition.to( self._handle, { x = self._endRange, time = switchTransitionTime } )
 			else
-				if _isAnimated then
-					self._transition = transition.to( self, { x = self._startRange, maskX = self._endRange, time = switchTransitionTime, onComplete = executeOnComplete } )
-					self._handleTransition = transition.to( self._handle, { x = self._startRange, time = switchTransitionTime } )
-				else
-					self.x = self._startRange
-					self._handle.x = self._startRange
-					self.maskX = self._endRange
+				self.x = self._endRange
+				self._handle.x = self._endRange
+				self.maskX = self._startRange
 				
-					-- Execute the onComplete listener
-					executeOnComplete()
-				end
+				-- Execute the onComplete listener
+				executeOnComplete()
 			end
-		
 		else
-		
-			if _isSwitchOn then
-				view._handle.x = view.x + view.contentWidth * 0.5 - view._handle.contentWidth * 0.5 + 4 
-				offView.isVisible = false
-				interView.isVisible = false
-				onView.isVisible = true
+			if _isAnimated then
+				self._transition = transition.to( self, { x = self._startRange, maskX = self._endRange, time = switchTransitionTime, onComplete = executeOnComplete } )
+				self._handleTransition = transition.to( self._handle, { x = self._startRange, time = switchTransitionTime } )
 			else
-				view._handle.x = view.x - view.contentWidth * 0.5 + view._handle.contentWidth * 0.5 - 4
-				interView.isVisible = false
-				onView.isVisible = false
-				offView.isVisible = true
+				self.x = self._startRange
+				self._handle.x = self._startRange
+				self.maskX = self._endRange
+				
+				-- Execute the onComplete listener
+				executeOnComplete()
 			end
-			-- Execute the onComplete listener
-			executeOnComplete()
-		
 		end
 	end
 	

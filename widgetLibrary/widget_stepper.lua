@@ -165,11 +165,6 @@ local function initWithSprite( stepper, options )
 		return self._view:_setValue( newValue )
 	end
 	
-	-- Getter for the stepper's value
-	function stepper:getValue()
-		return self._view:_getValue()
-	end
-	
 	----------------------------------------------------------
 	--	PRIVATE METHODS	
 	----------------------------------------------------------
@@ -374,11 +369,6 @@ local function initWithSprite( stepper, options )
 	function view:_setValue( newValue )
 		local value = newValue or self._currentValue
 		self._currentValue = newValue
-	end
-
-	-- Getter for the stepper's value
-	function view:_getValue()
-		return self._currentValue
 	end
 	
 	-- Finalize function

@@ -263,9 +263,8 @@ end
 -----------------------------------------------------------------------------------------
 
 function widget.newTableView( options )
-	local theme = _getTheme( "tableView", options )
 	local _tableView = require( "widget_tableview" )
-	return _tableView.new( options, theme )	
+	return _tableView.new( options )	
 end
 
 -----------------------------------------------------------------------------------------

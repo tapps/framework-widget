@@ -39,6 +39,14 @@ local _widget = require( "widget" )
 local isGraphicsV1 = ( 1 == display.getDefault( "graphicsCompatibility" ) )
 local isByteColorRange = display.getDefault( "isByteColorRange" )
 
+-- define a default color set for both graphics modes
+local buttonDefault
+if isByteColorRange then
+    buttonDefault = { default = { 0, 0, 0 }, over = { 255, 255, 255 } }
+else
+    buttonDefault = { default = { 0, 0, 0 }, over = { 1, 1, 1 } }
+end
+
 -- Function to handle touches on a widget button, function is common to all widget button creation types (ie image files, imagesheet, and 9 slice button creation)
 local function manageButtonTouch( view, event )
 	local phase = event.phase
@@ -52,13 +60,9 @@ local function manageButtonTouch( view, event )
 		-- Set the button to it's over image state
 		view:_setState( "over" )
 		
-		-- Create the alpha fade if the theme has it
-		if view._hasAlphaFade then
-			if view._label then
-				transition.to( view._label, { time = 50, alpha = 0.5 } )
-			else
-				transition.to( view, { time = 50, alpha = 0.5 } )
-			end
+		-- Create the alpha fade if ios7
+		if _widget.isSeven() then
+			transition.to( view._label, { time = 50, alpha = 0.5 } )
 		end
 
 		-- If there is a onPress method ( and not a onEvent method )
@@ -76,17 +80,13 @@ local function manageButtonTouch( view, event )
 		
 	elseif view._isFocus then
 		if "moved" == phase then
-			if not _widget._isWithinBounds( view.parent, event ) then
+			if not _widget._isWithinBounds( view, event ) then
 				-- Set the button to it's default image state
 				view:_setState( "default" )
 				
-				-- Create the alpha fade if the theme has it
-				if view._hasAlphaFade then
-					if view._label then
-						transition.to( view._label, { time = 50, alpha = 1.0 } )
-					else
-						transition.to( view, { time = 50, alpha = 1.0 } )
-					end
+				-- Create the alpha fade if ios7
+				if _widget.isSeven() then
+					transition.to( view._label, { time = 50, alpha = 1.0 } )
 				end
 				
 			else
@@ -94,20 +94,16 @@ local function manageButtonTouch( view, event )
 					-- Set the button to it's over image state
 					view:_setState( "over" )
 					
-					-- Create the alpha fade if the theme has it
-					if view._hasAlphaFade then
-						if view._label then
-							transition.to( view._label, { time = 50, alpha = 0.5 } )
-						else
-							transition.to( view, { time = 50, alpha = 0.5 } )
-						end
+					-- Create the alpha fade if ios7
+					if _widget.isSeven() then
+						transition.to( view._label, { time = 50, alpha = 0.5 } )
 					end
 					
 				end
 			end
 		
 		elseif "ended" == phase or "cancelled" == phase then
-			if _widget._isWithinBounds( view.parent, event ) then
+			if _widget._isWithinBounds( view, event ) then
 				-- If there is a onRelease method ( and not a onEvent method )
 				if view._onRelease and not view._onEvent then
 					view._onRelease( event )
@@ -117,13 +113,9 @@ local function manageButtonTouch( view, event )
 			-- Set the button to it's default image state
 			view:_setState( "default" )
 
-			-- Create the alpha fade if the theme has it
-			if view._hasAlphaFade then
-				if view._label then
-					transition.to( view._label, { time = 50, alpha = 1.0 } )
-				else
-					transition.to( view, { time = 50, alpha = 1.0 } )
-				end
+			-- Create the alpha fade if ios7
+			if _widget.isSeven() then
+				transition.to( view._label, { time = 50, alpha = 1.0 } )
 			end
 			
 			-- Remove focus from the button
@@ -134,8 +126,7 @@ local function manageButtonTouch( view, event )
 	
 	-- If there is a onEvent method ( and not a onPress or onRelease method )
 	if view._onEvent and not view._onPress and not view._onRelease then
-		-- corrected: phase becomes cancelled if outside the bounds of the widget, not the view's.
-		if not _widget._isWithinBounds( view.parent, event ) and "ended" == phase then
+		if not _widget._isWithinBounds( view, event ) and "ended" == phase then
 			event.phase = "cancelled"
 			
 		end
@@ -182,7 +173,6 @@ local function createUsingText( button, options )
 	view._pressedState = "default"
 	view._fontSize = opt.fontSize
 	view._labelColor = view._labelColor
-	view._hasAlphaFade = opt.hasAlphaFade
 	
 	-- Methods
 	view._onPress = opt.onPress
@@ -221,16 +211,17 @@ local function createUsingText( button, options )
 	end
 	
 	-- Touch listener for our button
-	function button:touch( event )
+	function view:touch( event )
 		-- Set the target to the view's parent group (the button object)
-		event.target = self
+		event.target = self.parent
 		
 		-- Manage touch events on the button
-		manageButtonTouch( self._view, event )
+		manageButtonTouch( self, event )
+		
 		return true
 	end
 	
-	button:addEventListener( "touch", button )
+	view:addEventListener( "touch" )
 	
 	----------------------------------------------------------
 	--	PRIVATE METHODS	
@@ -283,14 +274,6 @@ local function createUsingText( button, options )
 	-- Lose focus function
 	function button:_loseFocus()
 		self._view:_setState( "default" )
-		-- Create the alpha fade if the theme has it
-		if self._view._hasAlphaFade then
-			if self._view._label then
-				transition.to( self._view._label, { time = 50, alpha = 1.0 } )
-			else
-				transition.to( self._view, { time = 50, alpha = 1.0 } )
-			end
-		end
 	end
 	
 	-- Finalize function
@@ -381,7 +364,6 @@ local function createUsingImageFiles( button, options )
 	view._labelXOffset = opt.labelXOffset
 	view._labelYOffset = opt.labelYOffset
 	view._over = viewOver
-	view._hasAlphaFade = opt.hasAlphaFade
 	
 	-- Methods
 	view._onPress = opt.onPress
@@ -421,17 +403,18 @@ local function createUsingImageFiles( button, options )
 	end
 	
 	-- Touch listener for our button
-	function button:touch( event )
+	function view:touch( event )
 		-- Set the target to the view's parent group (the button object)
-		event.target = self
+		event.target = self.parent
+		
 		-- Manage touch events on the button
-		manageButtonTouch( self._view, event )
+		manageButtonTouch( self, event )
 		
 		return true
 	end
 	
-	button:addEventListener( "touch", button )
-		
+	view:addEventListener( "touch" )
+	
 	----------------------------------------------------------
 	--	PRIVATE METHODS	
 	----------------------------------------------------------
@@ -503,14 +486,6 @@ local function createUsingImageFiles( button, options )
 	-- Lose focus function
 	function button:_loseFocus()
 		self._view:_setState( "default" )
-		-- Create the alpha fade if the theme has it
-		if self._view._hasAlphaFade then
-			if self._view._label then
-				transition.to( self._view._label, { time = 50, alpha = 1.0 } )
-			else
-				transition.to( self._view, { time = 50, alpha = 1.0 } )
-			end
-		end
 	end
 	
 	-- Finalize function
@@ -546,10 +521,10 @@ local function createUsingImageSheet( button, options )
 	}
 	
 	-- Forward references
-	local view, viewLabel
+	local view, viewLabel, imageSheet
 	
 	-- Create a reference to the imageSheet
-	local imageSheet = opt.sheet
+	imageSheet = opt.sheet
 		
 	-- Create the view
 	view = display.newSprite( button, imageSheet, sheetOptions )
@@ -603,7 +578,6 @@ local function createUsingImageSheet( button, options )
 	view._labelAlign = opt.labelAlign
 	view._labelXOffset = opt.labelXOffset
 	view._labelYOffset = opt.labelYOffset
-	view._hasAlphaFade = opt.hasAlphaFade
 	
 	-- Methods
 	view._onPress = opt.onPress
@@ -643,16 +617,17 @@ local function createUsingImageSheet( button, options )
 	end
 
 	-- Touch listener for our button
-	function button:touch( event )
+	function view:touch( event )
 		-- Set the target to the view's parent group (the button object)
-		event.target = self
+		event.target = self.parent
 		
 		-- Manage touch events on the button
-		manageButtonTouch( self._view, event )
+		manageButtonTouch( self, event )
+				
 		return true
 	end
 	
-	button:addEventListener( "touch", button )
+	view:addEventListener( "touch" )
 	
 	----------------------------------------------------------
 	--	PRIVATE METHODS	
@@ -723,22 +698,12 @@ local function createUsingImageSheet( button, options )
 	-- Lose focus function
 	function button:_loseFocus()
 		self._view:_setState( "default" )
-		-- Create the alpha fade if the theme has it
-		if self._view._hasAlphaFade then
-			if self._view._label then
-				transition.to( self._view._label, { time = 50, alpha = 1.0 } )
-			else
-				transition.to( self._view, { time = 50, alpha = 1.0 } )
-			end
-		end
 	end
 	
 	-- Finalize function
 	function button:_finalize()
 		-- Set the ImageSheet to nil
 		self._imageSheet = nil
-		if imageSheet then imageSheet = nil; end
-		if ( opt and opt.sheet ) then opt.sheet = nil; end
 	end
 	
 	return button
@@ -770,8 +735,7 @@ local function createUsing9Slice( button, options )
 	end
 	
 	-- The view is the button (group)
-	view = display.newGroup()
-	button:insert( view )
+	view = button
 	
 	-- Imagesheet options
 	local sheetOptions =
@@ -924,25 +888,25 @@ local function createUsing9Slice( button, options )
 	
 	
 	-- Create the left portion of the button
-	viewTopLeft = display.newSprite( view, imageSheet, sheetOptions.viewTopLeft )
-	viewMiddleLeft = display.newSprite( view, imageSheet, sheetOptions.viewMiddleLeft )
-	viewBottomLeft = display.newSprite( view, imageSheet, sheetOptions.viewBottomLeft )
+	viewTopLeft = display.newSprite( button, imageSheet, sheetOptions.viewTopLeft )
+	viewMiddleLeft = display.newSprite( button, imageSheet, sheetOptions.viewMiddleLeft )
+	viewBottomLeft = display.newSprite( button, imageSheet, sheetOptions.viewBottomLeft )
 
 	-- Create the right portion of the button
-	viewTopRight = display.newSprite( view, imageSheet, sheetOptions.viewTopRight )
-	viewMiddleRight = display.newSprite( view, imageSheet, sheetOptions.viewMiddleRight )
-	viewBottomRight = display.newSprite( view, imageSheet, sheetOptions.viewBottomRight )
+	viewTopRight = display.newSprite( button, imageSheet, sheetOptions.viewTopRight )
+	viewMiddleRight = display.newSprite( button, imageSheet, sheetOptions.viewMiddleRight )
+	viewBottomRight = display.newSprite( button, imageSheet, sheetOptions.viewBottomRight )
 	
 	-- Create the middle portion of the button
-	viewTopMiddle = display.newSprite( view, imageSheet, sheetOptions.viewTopMiddle )
-	viewMiddle = display.newSprite( view, imageSheet, sheetOptions.viewMiddle )
-	viewBottomMiddle = display.newSprite( view, imageSheet, sheetOptions.viewBottomMiddle )
+	viewTopMiddle = display.newSprite( button, imageSheet, sheetOptions.viewTopMiddle )
+	viewMiddle = display.newSprite( button, imageSheet, sheetOptions.viewMiddle )
+	viewBottomMiddle = display.newSprite( button, imageSheet, sheetOptions.viewBottomMiddle )
 
 	-- Create the label (either embossed or standard)
 	if opt.embossedLabel then
-		viewLabel = display.newEmbossedText( view, opt.label, 0, 0, opt.font, opt.fontSize )
+		viewLabel = display.newEmbossedText( button, opt.label, 0, 0, opt.font, opt.fontSize )
 	else
-		viewLabel = display.newText( view, opt.label, 0, 0, opt.font, opt.fontSize )
+		viewLabel = display.newText( button, opt.label, 0, 0, opt.font, opt.fontSize )
 	end
 	
 	----------------------------------
@@ -1081,7 +1045,6 @@ local function createUsing9Slice( button, options )
 	view._topRight = viewTopRight
 	view._middleRight = viewMiddleRight
 	view._bottomRight = viewBottomRight
-	view._hasAlphaFade = opt.hasAlphaFade
 	
 	-- Methods
 	view._onPress = opt.onPress
@@ -1125,13 +1088,14 @@ local function createUsing9Slice( button, options )
 	end
 
 	-- Touch listener for our button
-	function button:touch( event )
+	function view:touch( event )
 		-- Manage touch events on the button
-		manageButtonTouch( self._view, event )
+		manageButtonTouch( self, event )
+		
 		return true
 	end
 	
-	button:addEventListener( "touch", button )
+	view:addEventListener( "touch" )
 	
 	----------------------------------------------------------
 	--	PRIVATE METHODS	
@@ -1233,22 +1197,12 @@ local function createUsing9Slice( button, options )
 	-- Lose focus function
 	function button:_loseFocus()
 		self._view:_setState( "default" )
-		-- Create the alpha fade if the theme has it
-		if self._view._hasAlphaFade then
-			if self._view._label then
-				transition.to( self._view._label, { time = 50, alpha = 1.0 } )
-			else
-				transition.to( self._view, { time = 50, alpha = 1.0 } )
-			end
-		end
 	end
 		
 	-- Finalize function
 	function button:_finalize()
 		-- Set the ImageSheet to nil
 		self._imageSheet = nil
-		if imageSheet then imageSheet = nil; end
-		if ( opt and opt.sheet ) then opt.sheet = nil; end
 	end
 		
 	return button
@@ -1284,9 +1238,15 @@ function M.new( options, theme )
 	opt.id = customOptions.id
 	opt.baseDir = customOptions.baseDir or system.ResourceDirectory
 	opt.label = customOptions.label or ""
-	opt.labelColor = customOptions.labelColor or themeOptions.labelColor
+	opt.labelColor = customOptions.labelColor or buttonDefault	
 	opt.font = customOptions.font or themeOptions.font or native.systemFont
 	opt.fontSize = customOptions.fontSize or themeOptions.fontSize or 14
+	
+	if _widget.isSeven() then
+		opt.font = customOptions.font or themeOptions.font or "HelveticaNeue-Light"
+		opt.fontSize = customOptions.fontSize or themeOptions.fontSize or 17
+		opt.labelColor = customOptions.labelColor or themeOptions.labelColor or buttonDefault
+	end
 	
 	opt.labelAlign = customOptions.labelAlign or "center"
 	opt.labelXOffset = customOptions.labelXOffset or 0
@@ -1294,9 +1254,6 @@ function M.new( options, theme )
 	opt.embossedLabel = customOptions.emboss or themeOptions.emboss or false
 	opt.isEnabled = customOptions.isEnabled
 	opt.textOnlyButton = customOptions.textOnly or false
-	
-	-- set the alpha fade param if the theme declares it
-	opt.hasAlphaFade = themeOptions.alphaFade or false
 	
 	-- If the user didn't pass in a isEnabled flag, set it to true
 	if nil == opt.isEnabled then
